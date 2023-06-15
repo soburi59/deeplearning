@@ -5,43 +5,42 @@ import torch.nn.functional as F
 import torchvision as tv
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
-# バッチサイズを変えてみる（一回の学習のデータ数）
-BATCHSIZE_LIST = [2**n for n in range(5, 11)]  # バッチサイズのリスト
-EPOCH = 10  # エポック数
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 使用するデバイス（GPU or CPU）
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-loss_list = []  # 損失の履歴を保存するリスト
-accuracy_list = []  # 正解率の履歴を保存するリスト
-epoch_list = list(range(EPOCH))  # エポック数のリスト
+# バッチサイズを変更する (一度の学習におけるデータの数)
+BATCHSIZE = 1200
+# データを何回学習するか
+EPOCH = 10
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-train_dataset = tv.datasets.MNIST(
-    root="./",
-    train=True,
-    transform=tv.transforms.ToTensor(),
-    download=True
-)
+loss_list = []
+accuracy_list = []
+epoch_list = list(np.arange(0, EPOCH, 1))
 
-test_dataset = tv.datasets.MNIST(
-    root="./",
-    train=False,
-    transform=tv.transforms.ToTensor(),
-    download=True
-)
+# MNISTデータセットの読み込み
+train_dataset = tv.datasets.MNIST(root="./",
+                                  train=True,
+                                  transform=tv.transforms.ToTensor(),
+                                  download=True)
 
-test_loader = torch.utils.data.DataLoader(
-    dataset=test_dataset,
-    batch_size=BATCHSIZE_LIST[-1],
-    shuffle=False
-)
+test_dataset = tv.datasets.MNIST(root="./",
+                                 train=False,
+                                 transform=tv.transforms.ToTensor(),
+                                 download=True)
+
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                          batch_size=BATCHSIZE,
+                                          shuffle=False)
 
 
 class MNIST(nn.Module):
     def __init__(self):
         super(MNIST, self).__init__()
-        self.l1 = nn.Linear(784, 300)  # 入力層から中間層への全結合層
-        self.l2 = nn.Linear(300, 300)  # 中間層から中間層への全結合層
-        self.l3 = nn.Linear(300, 10)  # 中間層から出力層への全結合層
+        self.l1 = nn.Linear(784, 300)  # 入力層784→300 (28x28の画像情報)
+        self.l2 = nn.Linear(300, 300)  # 中間層300→300
+        self.l3 = nn.Linear(300, 10)  # 最終層300→10
 
     def forward(self, x):
         h = F.relu(self.l1(x))
@@ -50,22 +49,90 @@ class MNIST(nn.Module):
         return y
 
 
-def train(train_loader, optimizer, device):
-    start_time = time.perf_counter()  # 学習開始時間を計測
-    model = MNIST().to(device)  # モデルをデバイスに転送
-    model.train()  # モデルを学習モードに設定
+def train(train_loader, flag):
+    start_time = time.perf_counter()
+    model = MNIST().to(DEVICE)
+    optimizer = torch.optim.Adam(model.parameters()) if flag else torch.optim.SGD(model.parameters(), lr=0.1)
+    model.train()
     for epoch in range(EPOCH):
         total_loss = 0
         for images, labels in train_loader:
-            images = images.view(-1, 28*28).to(device)
-            labels = labels.to(device)
-            optimizer.zero_grad()  # 勾配の初期化
-            y = model(images)  # モデルの出力を計算
-            loss = F.cross_entropy(y, labels)  # 損失の計算
-            total_loss += loss.item()  # トータルの損失を更新
-            loss.backward()  # 逆伝播
-            optimizer.step()  # パラメータの更新
-
-        loss_list.append(float(total_loss))  # 損失をリストに追加
+            images = images.view(-1, 28*28).to(DEVICE)
+            labels = labels.to(DEVICE)
+            optimizer.zero_grad()
+            y = model(images)
+            loss = F.cross_entropy(y, labels)
+            total_loss += loss.item()
+            loss.backward()
+            optimizer.step()
+        loss_list.append(float(total_loss))
         if epoch == 1:
-            print(f"epoch1のときのloss={total_loss}")  # epoch1のときの損失を
+            print(f"epoch1のときのloss={total_loss}")
+    print(f"学習処理時間: {time.perf_counter() - start_time}s")
+
+
+def test(test_loader, i):
+    total = len(test_loader.dataset)
+    correct = 0
+    model = MNIST().to(DEVICE)
+    model.load_state_dict(torch.load(f"epoch_{i}.model"))
+    model.eval()
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images = images.view(-1, 28*28).to(DEVICE)
+            labels = labels.to(DEVICE)
+            y = model(images)
+            pred_labels = y.max(dim=1)[1]
+            correct += (pred_labels == labels).sum()
+    accuracy_list.append(correct.item() / total)
+
+
+def save_fig(i, flag):
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.suptitle(f"BATCHSIZE={i}")
+    ax1.set_title("loss_graph")
+    ax1.set_xlabel("epoch")
+    ax1.set_ylabel("loss")
+    ax1.set_ylim(0, 100)
+    ax1.plot(loss_list)
+    ax1.set_xticks(epoch_list)
+
+    ax2.set_title("accuracy_graph")
+    ax2.set_xlabel("epoch")
+    ax2.set_ylabel("accuracy")
+    ax2.set_ylim(0.9, 1)
+    ax2.plot(accuracy_list)
+    ax2.set_xticks(epoch_list)
+
+    fig.tight_layout()
+    if flag:
+        plt.savefig(f"graph_batch{i}.png")
+    else:
+        plt.savefig(f"graph_batch{i}_SGD.png")
+
+
+batch_sizes = [2**n for n in range(5, 11)]
+print("---------------")
+for batch_size in batch_sizes:
+    print(f"BATCHSIZE={batch_size}")
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                               batch_size=batch_size,
+                                               shuffle=True)
+    train(train_loader, True)
+    for j in range(EPOCH):
+        test(test_loader, j)
+    save_fig(batch_size, True)
+    loss_list = []
+    accuracy_list = []
+
+print("---------------")
+print("Adam → SGD")
+batch_size = 256
+print(f"BATCHSIZE={batch_size}")
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                           batch_size=batch_size,
+                                           shuffle=True)
+train(train_loader, False)
+for j in range(EPOCH):
+    test(test_loader, j)
+save_fig(batch_size, False)
