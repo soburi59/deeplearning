@@ -24,9 +24,9 @@ epoch_list = list(np.arange(0, EPOCH, 1))
 class MNIST(nn.Module):
     def __init__(self):
         super(MNIST, self).__init__()
-        self.l1 = nn.Linear(784, 300)  # 入力層784→300 (28x28の画像情報)
-        self.l2 = nn.Linear(300, 300)  # 中間層300→300
-        self.l3 = nn.Linear(300, 10)  # 最終層300→10
+        self.l1 = nn.Linear(28*28, 512)  # 入力層784→512 (28x28の画像情報)
+        self.l2 = nn.Linear(512, 512)  # 中間層512→512
+        self.l3 = nn.Linear(512, 10)  # 最終層512→10
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
@@ -34,7 +34,6 @@ class MNIST(nn.Module):
         h = F.relu(self.l2(h))
         y = self.l3(h)
         return y
-
 
 def train_and_test(optimizer_name, batch_size, epochs):
     loss_list = []
@@ -79,7 +78,7 @@ def train_and_test(optimizer_name, batch_size, epochs):
         total = len(test_loader.dataset)
         correct = 0
 
-        with torch.no_grad():
+        with torch.no_grad():#勾配を計算せずに処理速度を上げる
             for images, labels in test_loader:
                 images = images.view(-1, 28 * 28).to(DEVICE)
                 labels = labels.to(DEVICE)
@@ -89,9 +88,9 @@ def train_and_test(optimizer_name, batch_size, epochs):
 
         accuracy = correct / total
         accuracy_list.append(accuracy)
+        #トレーニングしたモデルの出力
+        torch.save(model.state_dict(), f"model/model_batch{batch_size}_epoch{epoch}_{optimizer_name}.pth")
         print(f"Epoch [{epoch+1}/{epochs}], Accuracy: {accuracy:.4f}, Loss: {total_loss:.4f}, Time: {time.perf_counter() - start_time:.2f}s")
-    #トレーニングしたモデルの出力
-    torch.save(model.state_dict(), f"model/model_batch{batch_size}_{optimizer_name}.pth")
     save_fig(batch_size, optimizer_name, loss_list, accuracy_list)
 
 
@@ -124,6 +123,7 @@ def save_fig(batch_size, optimizer_name, loss_list, accuracy_list):
 
 if __name__ == '__main__':
     # MNISTデータセットの読み込み
+    trans = tv.transforms.Compose([tv.transforms.ToTensor(),tv.transforms.Normalize((0.5,), (0.5,))])
     train_dataset = tv.datasets.MNIST(root="./", train=True, transform=tv.transforms.ToTensor(), download=True)
     test_dataset = tv.datasets.MNIST(root="./", train=False, transform=tv.transforms.ToTensor(), download=True)
 
