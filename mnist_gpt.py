@@ -54,7 +54,8 @@ def train_and_test(optimizer_name, batch_size, epochs):
         optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
     else:
         raise ValueError("Invalid optimizer specified.")
-
+    
+    #train
     for epoch in range(epochs):
         start_time = time.perf_counter()
         model.train()
@@ -72,7 +73,7 @@ def train_and_test(optimizer_name, batch_size, epochs):
 
         loss_list.append(total_loss)
         
-      
+        #test
         model.eval()
         total = len(test_loader.dataset)
         correct = 0
@@ -88,7 +89,8 @@ def train_and_test(optimizer_name, batch_size, epochs):
         accuracy = correct / total
         accuracy_list.append(accuracy)
         print(f"Epoch [{epoch+1}/{epochs}], Accuracy: {accuracy:.4f}, Loss: {total_loss:.4f}, Time: {time.perf_counter() - start_time:.2f}s")
-
+    #トレーニングしたモデルの出力
+    torch.save(model.state_dict(), f"model_batch{batch_size}_{optimizer_name}.pth")
     save_fig(batch_size, optimizer_name, loss_list, accuracy_list)
 
 
@@ -115,8 +117,6 @@ def save_fig(batch_size, optimizer_name, loss_list, accuracy_list):
 
     # グラフのレイアウト調整
     fig.tight_layout()
-    #ターミナルに表示
-    plt.show()
     # グラフの保存
     plt.savefig(f"graph_batch{batch_size}_{optimizer_name}.png")
 
