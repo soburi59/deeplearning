@@ -9,7 +9,7 @@ import os
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-# バッチサイズを変更する (一度の学習におけるデータの数)
+# バッチサイズ (一度の学習におけるデータの数)
 BATCHSIZE = 1200
 # データを何回学習するか
 EPOCH = 10
@@ -105,10 +105,8 @@ def save_fig(i, flag):
     ax2.set_xticks(epoch_list)
 
     fig.tight_layout()
-    if flag:
-        plt.savefig(f"graph_batch{i}.png")
-    else:
-        plt.savefig(f"graph_batch{i}_SGD.png")
+    plt.savefig(f"graph_batch{i}.png")
+   
 
 
 batch_sizes = [2**n for n in range(5, 11)]
