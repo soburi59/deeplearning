@@ -16,7 +16,7 @@ def preprocess_image(image):
         image = ImageOps.invert(image)
     transform = transforms.Compose([
         transforms.ToTensor(),  # テンソルに変換
-        #transforms.Normalize((0.5,), (0.5,))  # 正規化
+        #transforms.Normalize((0.5,), (0.5,))  # 正規化 #←なぜかここをコメントアウトすると精度が良くなる
     ])
     image = transform(image).unsqueeze(0)
     return image
