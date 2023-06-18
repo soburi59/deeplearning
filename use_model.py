@@ -1,3 +1,4 @@
+# C:\Users\59195\AppData\Local\Programs\Python\Python310\lib\site-packages\matplotlib\mpl-data\matplotlibrc →font.family: MS Gothic,Agency FB
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as transforms
@@ -18,7 +19,7 @@ def preprocess_image(image):
         transforms.ToTensor(),  # テンソルに変換
         #transforms.Normalize((0.5,), (0.5,))  # 正規化 #←なぜかここをコメントアウトすると精度が良くなる
     ])
-    image = transform(image).unsqueeze(0)
+    image = transform(image).unsqueeze(0) #テンソルの0階目に要素数1の次元を挿入する
     return image
 
 def predict_image(image, model):
@@ -27,8 +28,11 @@ def predict_image(image, model):
         probabilities = F.softmax(output, dim=1)
     return probabilities.squeeze().tolist()
 
-def display_and_save_image(original_image, input_image, probabilities, save_path):
+def display_and_save_image(original_image, input_image, save_path,title):
     # PIL画像をMatplotlibで表示
+    plt.figure()
+    plt.suptitle(title)
+    
     plt.subplot(121)  # 1行2列のプロットの1番目
     plt.imshow(original_image)
     plt.title('Original Image')
@@ -41,7 +45,7 @@ def display_and_save_image(original_image, input_image, probabilities, save_path
     plt.savefig(save_path)  # 画像をファイルに保存
     plt.show()
 
-def result_show(probabilities,path):
+def result_show(probabilities,correct):
     # 最も確率の高いクラスを見つける
     max_probability = 0.0
     max_class = None
@@ -51,8 +55,11 @@ def result_show(probabilities,path):
             max_probability = probability
             max_class = class_index
     print(f"Most probable class: {max_class}")
-
-    display_and_save_image(image, input_image, probabilities, path)
+    if i==max_class:
+        print("Correct!!")
+    else:
+        print(f"Wrong(correct is {correct})")
+    
 if __name__ == '__main__':
     model_path = "model/model_batch128_epoch7_Adam.pth"
     state_dict = torch.load(model_path)
@@ -60,26 +67,32 @@ if __name__ == '__main__':
     model.load_state_dict(state_dict)
     model.eval()
     for i in range(10):
-        image_path = f"data_image/digital{i}.png"
-        image = Image.open(image_path)
+        title="case1:PC上で手書きした数字"
+        print(title)
+        image = Image.open(f"data_image/digital{i}.png")
         input_image = preprocess_image(image)
         probabilities = predict_image(input_image, model)
         path=f"data_fig/fig_digital{i}.png"
-        result_show(probabilities,path)
+        result_show(probabilities,i)
+        display_and_save_image(image, input_image, path, title)
         print("----------------")
     for i in range(10):
-        image_path = f"data_image/hand{i}.png"
-        image = Image.open(image_path)
+        title="case2:手書きした数字"
+        print(title)
+        image = Image.open(f"data_image/hand{i}.png")
         input_image = preprocess_image(image)
         probabilities = predict_image(input_image, model)
         path=f"data_fig/fig_hand{i}.png"
-        result_show(probabilities,path)
+        result_show(probabilities,i)
+        display_and_save_image(image, input_image, path, title)
         print("----------------")
     for i in range(10):
-        image_path = f"data_image/test{i}.png"
-        image = Image.open(image_path)
+        title="case3:Mnistデータセット"
+        print(title)
+        image = Image.open(f"data_image/test{i}.png")
         input_image = preprocess_image(image)
         probabilities = predict_image(input_image, model)
         path=f"data_fig/fig_test{i}.png"
-        result_show(probabilities,path)
+        result_show(probabilities,i)
+        display_and_save_image(image, input_image, path, title)
         print("----------------")
