@@ -17,6 +17,8 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 # データを何回学習するか
 EPOCH = 10
+# 学習率
+lr=0.1
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 epoch_list = list(np.arange(0, EPOCH, 1))
 
@@ -30,8 +32,8 @@ class MNIST(nn.Module):
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        h = F.relu(self.l1(x))
-        h = F.relu(self.l2(h))
+        h = F.relu(self.l1(x)) #活性化関数のランプ関数に通す
+        h = F.relu(self.l2(h)) #負の入力を0,それ以外をそのまま出力する関数
         y = self.l3(h)
         return y
 
@@ -51,7 +53,7 @@ def train_and_test(optimizer_name, batch_size, epochs):
     if optimizer_name == 'Adam':
         optimizer = torch.optim.Adam(model.parameters())
     elif optimizer_name == 'SGD':
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     else:
         raise ValueError("Invalid optimizer specified.")
     
@@ -61,13 +63,13 @@ def train_and_test(optimizer_name, batch_size, epochs):
         model.train()
         total_loss = 0
 
-        for images, labels in train_loader:
+        for images, labels in train_loader:# 重みの調整
             images = images.view(-1, 28 * 28).to(DEVICE)
             labels = labels.to(DEVICE)
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
-            loss.backward()
+            loss.backward() # 誤差の逆伝播
             optimizer.step()
             total_loss += loss.item()
 

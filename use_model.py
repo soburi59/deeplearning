@@ -7,17 +7,16 @@ from PIL import Image, ImageOps
 import numpy as np
 from matplotlib import pyplot as plt
 
-def preprocess_image(image):
-    # mnistのデータセットは背景が黒・グレースケール・28*28のデータなので、色反転させ、グレースケールに変換し、リサイズして入力する
-    image = ImageOps.invert(image.convert('L')).resize((28, 28))
-    
-    # 画素値の平均を計算
-    average = np.mean(np.array(image))
+def preprocess_image(image):# 画像の前処理
+    # mnistのデータセットは背景が黒・グレースケール・28*28のデータなのでそれに合うように適切に変換する
+    image = image.convert("L")# グレースケールにする
+    average = np.mean(np.array(image))# 画素値の平均を計算
     if average >= 127.5:#背景が白か黒か判定
-        image = ImageOps.invert(image)
+        image = ImageOps.invert(image)#背景が白なら色を逆転
+    image=image.resize((28, 28))# リサイズ
     transform = transforms.Compose([
         transforms.ToTensor(),  # テンソルに変換
-        #transforms.Normalize((0.5,), (0.5,))  # 正規化 #←なぜかここをコメントアウトすると精度が良くなる
+        #transforms.transforms.Normalize((0.5,), (0.5,)),
     ])
     image = transform(image).unsqueeze(0) #テンソルの0階目に要素数1の次元を挿入する
     return image
@@ -28,7 +27,7 @@ def predict_image(image, model):
         probabilities = F.softmax(output, dim=1)
     return probabilities.squeeze().tolist()
 
-def display_and_save_image(original_image, input_image, save_path,title):
+def show_img(original_image, input_image, save_path,title):
     # PIL画像をMatplotlibで表示
     plt.figure()
     plt.suptitle(title)
@@ -45,7 +44,7 @@ def display_and_save_image(original_image, input_image, save_path,title):
     plt.savefig(save_path)  # 画像をファイルに保存
     plt.show()
 
-def result_show(probabilities,correct):
+def result_show(probabilities,correct):#結果の表示
     # 最も確率の高いクラスを見つける
     max_probability = 0.0
     max_class = None
@@ -57,15 +56,18 @@ def result_show(probabilities,correct):
     print(f"Most probable class: {max_class}")
     if i==max_class:
         print("Correct!!")
+        return 1
     else:
         print(f"Wrong(correct is {correct})")
+        return 0
     
 if __name__ == '__main__':
-    model_path = "model/model_batch128_epoch7_Adam.pth"
+    model_path = "model/model_batch64_epoch5_Adam.pth"
     state_dict = torch.load(model_path)
     model = MNIST()
     model.load_state_dict(state_dict)
     model.eval()
+    count=0
     for i in range(10):
         title="case1:PC上で手書きした数字"
         print(title)
@@ -73,9 +75,11 @@ if __name__ == '__main__':
         input_image = preprocess_image(image)
         probabilities = predict_image(input_image, model)
         path=f"data_fig/fig_digital{i}.png"
-        result_show(probabilities,i)
-        display_and_save_image(image, input_image, path, title)
+        count+=result_show(probabilities,i)
+        show_img(image, input_image, path, title)
         print("----------------")
+    print(f"accuracy:{(count/10)*100}%")
+    count=0
     for i in range(10):
         title="case2:手書きした数字"
         print(title)
@@ -83,9 +87,11 @@ if __name__ == '__main__':
         input_image = preprocess_image(image)
         probabilities = predict_image(input_image, model)
         path=f"data_fig/fig_hand{i}.png"
-        result_show(probabilities,i)
-        display_and_save_image(image, input_image, path, title)
+        count+=result_show(probabilities,i)
+        show_img(image, input_image, path, title)
         print("----------------")
+    print(f"accuracy:{(count/10)*100}%")
+    count=0
     for i in range(10):
         title="case3:Mnistデータセット"
         print(title)
@@ -93,6 +99,7 @@ if __name__ == '__main__':
         input_image = preprocess_image(image)
         probabilities = predict_image(input_image, model)
         path=f"data_fig/fig_test{i}.png"
-        result_show(probabilities,i)
-        display_and_save_image(image, input_image, path, title)
+        count+=result_show(probabilities,i)
+        show_img(image, input_image, path, title)
         print("----------------")
+    print(f"accuracy:{(count/10)*100}%")
