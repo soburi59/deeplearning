@@ -91,7 +91,7 @@ def train_and_test(optimizer_name, batch_size, epochs):
         accuracy = correct / total
         accuracy_list.append(accuracy)
         #トレーニングしたモデルの出力
-        torch.save(model.state_dict(), f"model/model_batch{batch_size}_epoch{epoch}_{optimizer_name}.pth")
+        torch.save(model.state_dict(), f"model/model_batch{batch_size}_epoch{epoch+1}_{optimizer_name}.pth")
         print(f"Epoch [{epoch+1}/{epochs}], Accuracy: {accuracy:.4f}, Loss: {total_loss:.4f}, Time: {time.perf_counter() - start_time:.2f}s")
     save_fig(batch_size, optimizer_name, loss_list, accuracy_list)
 

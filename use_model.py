@@ -1,8 +1,7 @@
-# C:\Users\59195\AppData\Local\Programs\Python\Python310\lib\site-packages\matplotlib\mpl-data\matplotlibrc →font.family: MS Gothic,Agency FB
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from mnist import MNIST
+from pytorch import MNIST
 from PIL import Image, ImageOps
 import numpy as np
 from matplotlib import pyplot as plt
@@ -16,7 +15,7 @@ def preprocess_image(image):# 画像の前処理
     image=image.resize((28, 28))# リサイズ
     transform = transforms.Compose([
         transforms.ToTensor(),  # テンソルに変換
-        #transforms.transforms.Normalize((0.5,), (0.5,)),
+        #transforms.transforms.Normalize((0.5,), (0.5,)), #何故か正規化するとうまくいかない
     ])
     image = transform(image).unsqueeze(0) #テンソルの0階目に要素数1の次元を挿入する
     return image
@@ -62,12 +61,13 @@ def result_show(probabilities,correct):#結果の表示
         return 0
     
 if __name__ == '__main__':
-    model_path = "model/model_batch64_epoch5_Adam.pth"
+    model_path = "model/model_batch100_epoch8_Adam.pth"
     state_dict = torch.load(model_path)
     model = MNIST()
     model.load_state_dict(state_dict)
     model.eval()
     count=0
+    
     for i in range(10):
         title="case1:PC上で手書きした数字"
         print(title)
@@ -79,6 +79,7 @@ if __name__ == '__main__':
         show_img(image, input_image, path, title)
         print("----------------")
     print(f"accuracy:{(count/10)*100}%")
+    print("----------------")
     count=0
     for i in range(10):
         title="case2:手書きした数字"
@@ -91,6 +92,7 @@ if __name__ == '__main__':
         show_img(image, input_image, path, title)
         print("----------------")
     print(f"accuracy:{(count/10)*100}%")
+    print("----------------")
     count=0
     for i in range(10):
         title="case3:Mnistデータセット"
@@ -103,3 +105,4 @@ if __name__ == '__main__':
         show_img(image, input_image, path, title)
         print("----------------")
     print(f"accuracy:{(count/10)*100}%")
+    print("----------------")
