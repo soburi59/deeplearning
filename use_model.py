@@ -24,7 +24,7 @@ def predict_image(image, model):
     with torch.no_grad():
         output = model(image)
         probabilities = F.softmax(output, dim=1)
-    return probabilities.squeeze().tolist()
+    return probabilities.squeeze().tolist() #各クラスの確率を返す
 
 def show_img(original_image, input_image, save_path,title):
     # PIL画像をMatplotlibで表示
@@ -55,7 +55,7 @@ def result_show(probabilities,correct):#結果の表示
     print(f"Most probable class: {max_class}")
     if i==max_class:
         print("Correct!!")
-        return 1
+        return 1 #合ってたら1を返す.
     else:
         print(f"Wrong(correct is {correct})")
         return 0
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         count+=result_show(probabilities,i)
         show_img(image, input_image, path, title)
         print("----------------")
-    print(f"accuracy:{(count/10)*100}%")
+    print(f"accuracy:{(count/10)*100}%") #1~9の正答率
     print("----------------")
     count=0
     for i in range(10):
